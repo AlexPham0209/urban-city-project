@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "urban-traffic"
+version = "0.1.0"
+description = "A short description of your project."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"} # Or use {file = "LICENSE"}
+authors = [
+    {name = "Alex Pham", email = "ap992292@wcupa.edu"},
+]
+dependencies = [
+    "pygame",
+    "pygame_menu"
+]
