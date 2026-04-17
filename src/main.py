@@ -123,7 +123,7 @@ class Game:
             self.total_time, self.total_toll_cost, self.route = self.city.find_shortest_path(
                 self.start.name,
                 self.end.name,
-                maximum_toll_cost=float(self.toll_cost_input.textbox.getText() or 0),
+                maximum_toll_cost=float(self.toll_cost_input.textbox.getText()) or None if self.toll_cost_input.is_toggled else None,
                 is_emergency=self.emergency_toggle.emergency_toggle.getValue(),
             )
             self.reset_selection()
@@ -202,11 +202,15 @@ class Game:
         self.dropdown.draw()
         self.emergency_toggle.draw()
         self.edge_menu.draw()
+        self.toll_cost_input.draw()
         self.draw_distance()
         # self.node_menu.draw()
 
         pygame_widgets.update(events)
         pygame.display.update()
+
+    def update(self):
+        self.toll_cost_input.on_toggled()
 
     def state_changed(self):
         self.state_exit()
@@ -251,6 +255,7 @@ class Game:
 
                 self.handle_mouse_event(event)
 
+            self.update()
             self.render(events)
             self.clock.tick(FPS)
 

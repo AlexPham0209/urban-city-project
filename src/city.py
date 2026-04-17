@@ -221,7 +221,7 @@ class City:
 
         for node in self.adj:
             self.adj[node] = [r for r in self.adj[node] if r.to != name]
-
+    
     def add_road(
         self,
         a: str,
@@ -288,8 +288,12 @@ class City:
 
                 if to not in dist or time + road.get_cost() < dist[to]:
                     dist[to] = time + road.get_cost()
+                    next_toll_cost = total_toll_cost
+                    if not is_emergency:
+                        next_toll_cost += toll_cost
+
                     heapq.heappush(
-                        q, (dist[to], total_toll_cost + toll_cost, to, path + [to])
+                        q, (dist[to], next_toll_cost, to, path + [to])
                     )
 
         return -1, -1, []
