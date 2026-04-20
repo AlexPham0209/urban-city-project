@@ -74,6 +74,17 @@ class Game:
 
         self.city.add_intersection(name, self.mx, self.my, 25, (127, 127, 127))
 
+    def edit_edge(self, data: dict):
+        print(data)
+
+    def edit_node(self, name: str):
+        if not self.start:
+            return
+        
+        self.start.state = IntersectionState.UNSELECTED
+        self.start.name = name
+        self.start = None
+    
     def reset_selection(self):
         if self.start:
             self.start.state = IntersectionState.UNSELECTED
@@ -84,6 +95,9 @@ class Game:
         self.end = None
 
     def select_intersection(self, selected: Intersection):
+        if len(self.city.intersections) <= 1:
+            return False
+    
         if not self.start:
             self.start = selected
             self.start.state = IntersectionState.FIRST
@@ -98,12 +112,12 @@ class Game:
             self.mx, self.my = pygame.mouse.get_pos()
             self.node_menu.show()
             return
-            
+
         selected = self.city.clicked_intersection(event)
         self.city.clicked_road(event)
         if not selected:
             return
-
+        
         if self.select_intersection(selected):
             if self.start != self.end:
                 self.edge_menu.show()
@@ -129,6 +143,16 @@ class Game:
             )
             self.reset_selection()
 
+    def handle_edit(self, event: Event):
+        if self.start:
+            return
+
+        self.start = self.city.clicked_intersection(event)
+        
+        if self.start:
+            self.start.state = IntersectionState.SECOND
+            self.node_menu.show()
+
     def handle_mouse_event(self, event: Event):
         if event.type != pygame.MOUSEBUTTONDOWN:
             return
@@ -140,6 +164,8 @@ class Game:
                 self.handle_delete(event)
             case State.CALCULATE:
                 self.handle_calculate(event)
+            case State.EDIT:
+                self.handle_edit(event)
 
     def draw_distance(self):
         if self.total_time is None or self.state != State.CALCULATE:
@@ -235,11 +261,39 @@ class Game:
                 self.end = None
                 self.total_time = None
                 self.route = None
+
+            case State.EDIT:
+                if self.start:
+                    self.start.state = IntersectionState.UNSELECTED
+
+                self.start = None
+                self.end = None
+                self.node_menu.hide()
+                self.edge_menu.hide()
+                
             case _:
                 pass
 
     def state_enter(self):
-        pass
+        match self.state:
+            case State.CREATE:
+                self.node_menu.callback = self.create_node
+                self.edge_menu.callback = self.create_edge
+                self.node_menu.button.setText("Create Intersection")
+
+            case State.DELETE:
+                pass
+
+            case State.CALCULATE:
+                pass
+
+            case State.EDIT:
+                self.node_menu.callback = self.edit_node
+                self.edge_menu.callback = self.edit_edge
+                self.node_menu.button.setText("Edit Intersection")
+                
+            case _:
+                pass
 
     def run(self):
         running = True

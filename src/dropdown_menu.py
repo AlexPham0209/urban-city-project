@@ -26,8 +26,8 @@ class DropdownMenu:
             self.width,
             self.height,
             name="Mode",
-            choices=["Create", "Delete", "Calculate"],
-            values=[State.CREATE, State.DELETE, State.CALCULATE],
+            choices=["Create", "Delete", "Calculate", "Edit"],
+            values=[State.CREATE, State.DELETE, State.CALCULATE, State.EDIT],
             # Typography
             font=self.font,
             textHAlign="centre",
