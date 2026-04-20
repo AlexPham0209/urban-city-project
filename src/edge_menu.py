@@ -82,6 +82,30 @@ class EdgeMenu:
             values=[CongestionLevel.BUSY, CongestionLevel.NON_BUSY],
         )
 
+        # self.road_condition_input = Dropdown(
+        #     screen,
+        #     self.x + self.PADDING,
+        #     self.toll_cost.getY() + height + self.PADDING,
+        #     input_width,
+        #     height,
+        #     fontSize=20,
+        #     textHAlign="centre",
+        #     # Colors (modern palette)
+        #     colour=(225, 225, 225),
+        #     borderColour=(200, 200, 200),
+        #     textColour=(40, 40, 40),
+        #     # Dropdown options
+        #     colourSelected=(220, 235, 250),
+        #     colourHover=(230, 240, 255),
+        #     # Shape
+        #     borderRadius=10,
+        #     # Behavior
+        #     direction="down",
+        #     name="Congestion Level",
+        #     choices=["Busy", "Non-Busy"],
+        #     values=[CongestionLevel.BUSY, CongestionLevel.NON_BUSY],
+        # )
+
         # 4. One-Way Toggle (Positioned to the right of inputs)
         self.one_way_toggle = Toggle(
             self.screen,

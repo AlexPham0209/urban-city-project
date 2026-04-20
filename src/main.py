@@ -64,7 +64,7 @@ class Game:
         self.node_menu: NodeMenu = NodeMenu(self.screen, self.create_node)
 
     def create_edge(self, data: dict):
-        self.city.add_road(self.start.name, self.end.name, distance=data["distance"], toll_cost=data["toll_cost"], congestion_level=data["congestion"], directed=data["is_one_way"])
+        self.city.add_road(self.start.id, self.end.id, distance=data["distance"], toll_cost=data["toll_cost"], congestion_level=data["congestion"], directed=data["is_one_way"])
         self.edge_menu.hide()
         self.reset_selection()
 
@@ -73,7 +73,7 @@ class Game:
             return
 
         self.city.add_intersection(name, self.mx, self.my, 25, (127, 127, 127))
-
+    
     def edit_edge(self, data: dict):
         print(data)
 
@@ -84,18 +84,18 @@ class Game:
         self.start.state = IntersectionState.UNSELECTED
         self.start.name = name
         self.start = None
-    
+
     def reset_selection(self):
         if self.start:
             self.start.state = IntersectionState.UNSELECTED
         if self.end:
             self.end.state = IntersectionState.UNSELECTED
-
+        
         self.start = None
         self.end = None
 
     def select_intersection(self, selected: Intersection):
-        if len(self.city.intersections) <= 1:
+        if len(self.city.idx_to_intersection) <= 1:
             return False
     
         if not self.start:
@@ -127,7 +127,11 @@ class Game:
     def handle_delete(self, event: Event):
         selected = self.city.clicked_intersection(event)
         if selected:
-            self.city.remove_intersection(selected.name)
+            self.city.remove_intersection(selected.id)
+        
+        selected = self.city.clicked_road(event)
+        if selected:
+            self.city.remove_road(selected.id)
 
     def handle_calculate(self, event: Event):
         selected = self.city.clicked_intersection(event)
@@ -136,8 +140,8 @@ class Game:
 
         if self.select_intersection(selected):
             self.total_time, self.total_toll_cost, self.route = self.city.find_shortest_path(
-                self.start.name,
-                self.end.name,
+                self.start.id,
+                self.end.id,
                 maximum_toll_cost=float(self.toll_cost_input.textbox.getText()) or None if self.toll_cost_input.is_toggled else None,
                 is_emergency=self.emergency_toggle.emergency_toggle.getValue(),
             )

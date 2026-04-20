@@ -31,7 +31,8 @@ class RoadCondition(Enum):
 
 @dataclass
 class Road:
-    to: str
+    id: int
+    to: int
     distance: float
     congestion_level: CongestionLevel
     condition: RoadCondition
@@ -45,10 +46,14 @@ class Road:
 
     def __lt__(self, other: Self) -> bool:
         return self.distance <= other.distance
+    
+    def __hash__(self):
+        return self.id
 
 
 @dataclass
 class Intersection:
+    id: int
     name: str
     x: int
     y: int
@@ -119,7 +124,7 @@ class Intersection:
         return self.name == other.name
 
     def __hash__(self):
-        return hash(self)
+        return self.id
 
     def __repr__(self):
         return self.name
@@ -127,8 +132,15 @@ class Intersection:
 
 class City:
     def __init__(self, font: Font):
-        self.intersections: dict[str, Intersection] = {}
-        self.adj: dict[str, list[Road]] = defaultdict(list)
+        self.nodes = 0
+        self.intersections_to_idx: dict[Intersection, int] = {}
+        self.idx_to_intersection: dict[int, Intersection] = {}
+
+        self.edges = 0
+        self.road_to_idx: dict[Road, int] = {}
+        self.idx_to_road: dict[int, Road] = {}
+
+        self.adj: dict[int, set[Road]] = defaultdict(set)
         self.font: Font = font
 
     # --------------------------
@@ -136,10 +148,10 @@ class City:
     # --------------------------
     def draw(self, screen: Surface):
         for start, roads in self.adj.items():
-            a = self.intersections[start]
+            a = self.idx_to_intersection[start]
 
             for road in roads:
-                b = self.intersections[road.to]
+                b = self.idx_to_intersection[road.to]
 
                 if road.reversed:
                     continue
@@ -159,7 +171,7 @@ class City:
                 # Draw distance label
                 self._draw_road_label(screen, a, b, road)
 
-        for intersection in self.intersections.values():
+        for intersection in self.idx_to_intersection.values():
             intersection.draw(screen, self.font)
 
     def _draw_road_label(
@@ -201,7 +213,7 @@ class City:
     # --------------------------
     def clicked_intersection(self, event: Event) -> Optional[Intersection]:
         return next(
-            (i for i in self.intersections.values() if i.clicked(event)),
+            (i for i in self.idx_to_intersection.values() if i.clicked(event)),
             None,
         )
     
@@ -212,13 +224,13 @@ class City:
         mx, my = pygame.mouse.get_pos()
 
         for start, roads in self.adj.items():
-            a = self.intersections[start]
+            a = self.idx_to_intersection[start]
 
             for road in roads:
                 if road.reversed:
                     continue
                     
-                b = self.intersections[road.to]
+                b = self.idx_to_intersection[road.to]
                 dx, dy = b.x - a.x, b.y - a.y
 
                 distance = abs(dy * mx - dx * my + b.x * a.y - b.y * a.x) / math.sqrt(dy ** 2 + dx ** 2)
@@ -230,23 +242,23 @@ class City:
     # Graph Mutations
     # --------------------------
     def add_intersection(self, name: str, x: int, y: int, radius: int, color):
-        if name in self.intersections:
-            return False
-
-        self.intersections[name] = Intersection(name, x, y, radius, color)
+        intersection = Intersection(self.nodes, name, x, y, radius, color)
+        self.idx_to_intersection[self.nodes] = intersection
+        self.intersections_to_idx[intersection] = self.nodes
+        self.nodes += 1 
         return True
 
-    def remove_intersection(self, name: str):
-        self.intersections.pop(name, None)
-        self.adj.pop(name, None)
+    def remove_intersection(self, id: int):
+        self.idx_to_intersection.pop(id, None)
+        self.adj.pop(id, None)
 
         for node in self.adj:
-            self.adj[node] = [r for r in self.adj[node] if r.to != name]
-    
+            self.adj[node] = [r for r in self.adj[node] if r.to != id]
+
     def add_road(
         self,
-        a: str,
-        b: str,
+        a: int,
+        b: int,
         distance: float,
         congestion_level: CongestionLevel = CongestionLevel.NON_BUSY,
         condition: RoadCondition = RoadCondition.CLEAR,
@@ -254,23 +266,61 @@ class City:
         directed: bool = True,
         closed: bool = False,
     ):
-        if a not in self.intersections or b not in self.intersections:
+        if a not in self.idx_to_intersection or b not in self.idx_to_intersection:
             return
 
         road = Road(
-            b, distance, congestion_level, condition, toll_cost, closed, False, directed
+            self.edges, b, distance, congestion_level, condition, toll_cost, closed, False, directed
         )
-        self.adj[a].append(road)
+        self.idx_to_road[self.edges] = road
+        self.road_to_idx[road] = self.edges
+        self.adj[a].add(road)
+        self.edges += 1
+
+        if directed:
+            return
 
         reverse = Road(
-            a, distance, congestion_level, condition, toll_cost, closed, True, directed
+            self.edges, a, distance, congestion_level, condition, toll_cost, closed, True, directed
         )
-        self.adj[b].append(reverse)
+        self.idx_to_road[self.edges] = reverse
+        self.road_to_idx[reverse] = self.edges
+        self.adj[b].add(reverse)
+        self.edges += 1
+
+    def remove_road(self, id: int):
+        if id not in self.idx_to_road:
+            return
+        
+        road = self.idx_to_road[id]
+        self.idx_to_road.pop(id, None)
+        self.adj.pop(id, None)
+
+        for _, roads in self.adj.items():
+            if road in roads:
+                roads.remove(road)
+
+        if id + 1 not in self.idx_to_road:
+            return 
+        
+        reversed = self.idx_to_road[id + 1]
+
+        if not reversed.reversed:
+            return
+
+        self.idx_to_road.pop(id + 1, None)
+        self.adj.pop(id + 1, None)
+
+        for _, roads in self.adj:
+            if reversed in roads:
+                roads.remove(reversed)
+
+
 
     def find_shortest_path(
         self,
-        src: str,
-        dest: str,
+        src: int,
+        dest: int,
         maximum_toll_cost: float | None = None,
         is_emergency: bool = False,
     ) -> tuple[float, float, list[float]]:
@@ -278,8 +328,11 @@ class City:
         dist = {}
         dist[src] = 0
 
+        if src not in self.idx_to_intersection or dest not in self.idx_to_intersection:
+            return -1, -1, []
+
         # State: (Time, Toll Cost, Intersection, Path)
-        q.append((0, 0, src, [src]))
+        q.append((0, 0, src, [self.idx_to_intersection[src].name]))
 
         while q:
             time, total_toll_cost, curr, path = heapq.heappop(q)
@@ -288,7 +341,7 @@ class City:
                 return time, total_toll_cost, path
 
             for road in self.adj[curr]:
-                to, _, _, condition, toll_cost, closed, reversed, is_one_way = astuple(
+                id, to, _, _, condition, toll_cost, closed, reversed, is_one_way = astuple(
                     road
                 )
 
@@ -314,7 +367,7 @@ class City:
                         next_toll_cost += toll_cost
 
                     heapq.heappush(
-                        q, (dist[to], next_toll_cost, to, path + [to])
+                        q, (dist[to], next_toll_cost, to, path + [self.idx_to_intersection[to].name])
                     )
 
         return -1, -1, []
