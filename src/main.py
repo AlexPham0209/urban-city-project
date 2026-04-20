@@ -98,8 +98,9 @@ class Game:
             self.mx, self.my = pygame.mouse.get_pos()
             self.node_menu.show()
             return
-
-        selected = self.city.clicked(event)
+            
+        selected = self.city.clicked_intersection(event)
+        self.city.clicked_road(event)
         if not selected:
             return
 
@@ -110,12 +111,12 @@ class Game:
                 self.reset_selection()
 
     def handle_delete(self, event: Event):
-        selected = self.city.clicked(event)
+        selected = self.city.clicked_intersection(event)
         if selected:
             self.city.remove_intersection(selected.name)
 
     def handle_calculate(self, event: Event):
-        selected = self.city.clicked(event)
+        selected = self.city.clicked_intersection(event)
         if not selected:
             return
 

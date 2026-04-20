@@ -199,11 +199,32 @@ class City:
     # --------------------------
     # Interaction
     # --------------------------
-    def clicked(self, event: Event) -> Optional[Intersection]:
+    def clicked_intersection(self, event: Event) -> Optional[Intersection]:
         return next(
             (i for i in self.intersections.values() if i.clicked(event)),
             None,
         )
+    
+    def clicked_road(self, event: Event) -> Optional[Intersection]:
+        if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
+            return
+            
+        mx, my = pygame.mouse.get_pos()
+
+        for start, roads in self.adj.items():
+            a = self.intersections[start]
+
+            for road in roads:
+                if road.reversed:
+                    continue
+                    
+                b = self.intersections[road.to]
+                dx, dy = b.x - a.x, b.y - a.y
+
+                distance = abs(dy * mx - dx * my + b.x * a.y - b.y * a.x) / math.sqrt(dy ** 2 + dx ** 2)
+                
+                if distance < 10:
+                    return road
 
     # --------------------------
     # Graph Mutations
