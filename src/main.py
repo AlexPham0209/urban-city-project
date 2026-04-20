@@ -37,7 +37,7 @@ class Game:
         self.font: Font = pygame.font.SysFont("Segoe UI", 24)
 
         self.state: State = State.CREATE
-
+        
         self.DROPDOWN_WIDTH: int = 160
         self.DROPDOWN_HEIGHT: int = 44
 
@@ -137,6 +137,9 @@ class Game:
         selected = self.city.clicked_intersection(event)
         if not selected:
             return
+        
+        if self.start and self.end:
+            self.reset_selection()
 
         if self.select_intersection(selected):
             self.total_time, self.total_toll_cost, self.route = self.city.find_shortest_path(
@@ -145,7 +148,7 @@ class Game:
                 maximum_toll_cost=float(self.toll_cost_input.textbox.getText()) or None if self.toll_cost_input.is_toggled else None,
                 is_emergency=self.emergency_toggle.emergency_toggle.getValue(),
             )
-            self.reset_selection()
+            
 
     def handle_edit(self, event: Event):
         if self.start:
@@ -251,24 +254,20 @@ class Game:
     def state_exit(self):
         match self.state:
             case State.CREATE:
-                self.start = None
-                self.end = None
+                self.reset_selection()
                 self.node_menu.hide()
                 self.edge_menu.hide()
 
             case State.DELETE:
-                self.start = None
-                self.end = None
+                self.reset_selection()
 
             case State.CALCULATE:
-                self.start = None
-                self.end = None
+                self.reset_selection()
                 self.total_time = None
                 self.route = None
 
             case State.EDIT:
-                if self.start:
-                    self.start.state = IntersectionState.UNSELECTED
+                self.reset_selection()
 
                 self.start = None
                 self.end = None

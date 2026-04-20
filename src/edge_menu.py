@@ -6,17 +6,21 @@ from pygame_widgets.button import Button
 from pygame_widgets.toggle import Toggle
 from pygame_widgets.dropdown import Dropdown
 
-from city import CongestionLevel
-
+# Assuming these exist in your city.py
+from city import CongestionLevel, RoadCondition 
 
 class EdgeMenu:
-    # Increased height to fit new rows
-    WIDTH = 380
-    HEIGHT = 280
-    PADDING = 15
+    # Increased height to fit the second dropdown comfortably
+    WIDTH = 400
+    HEIGHT = 360
+    PADDING = 20
 
-    BG_COLOR = (245, 245, 245)
-    BORDER_COLOR = (200, 200, 200)
+    # Modern Color Palette
+    BG_COLOR = (252, 252, 252)
+    HEADER_COLOR = (70, 130, 180)
+    TEXT_COLOR = (45, 45, 45)
+    BORDER_COLOR = (220, 220, 220)
+    SHADOW_COLOR = (0, 0, 0, 30)
 
     def __init__(self, screen: Surface, callback, font: Font):
         self.screen = screen
@@ -27,106 +31,72 @@ class EdgeMenu:
         self.x = (screen.get_width() - self.WIDTH) // 2
         self.y = 20
 
-        input_width = 180
-        button_width = 140
-        height = 35  # Slightly shorter to save vertical space
+        input_width = 200
+        height = 35
+        
+        # UI Styling variables
+        widget_style = {
+            "fontSize": 18,
+            "borderColour": (200, 200, 200),
+            "radius": 5,
+            "colour": (255, 255, 255)
+        }
 
         # 1. Distance Input
         self.weight_textbox = TextBox(
-            screen,
-            self.x + self.PADDING,
-            self.y + 40,
-            input_width,
-            height,
-            fontSize=20,
-            borderColour=(180, 180, 180),
-            radius=5,
-            placeholderText="Distance (mi)",
+            screen, self.x + self.PADDING, self.y, input_width, height,
+            placeholderText="Distance (mi)", **widget_style
         )
 
         # 2. Toll Cost Input
         self.toll_cost = TextBox(
-            screen,
-            self.x + self.PADDING,
-            self.weight_textbox.getY() + height + self.PADDING,
-            input_width,
-            height,
-            fontSize=20,
-            borderColour=(180, 180, 180),
-            radius=5,
-            placeholderText="Toll Cost ($)",
+            screen, self.x + self.PADDING, self.weight_textbox.getY() + height + self.PADDING,
+            input_width, height, placeholderText="Toll Cost ($)", **widget_style
         )
 
-        # 3. Congestion Level (1.0 = clear, 2.0 = heavy traffic)
+        # 3. Congestion Dropdown
         self.congestion_input = Dropdown(
-            screen,
-            self.x + self.PADDING,
-            self.toll_cost.getY() + height + self.PADDING,
-            input_width,
-            height,
-            fontSize=20,
-            textHAlign="centre",
-            # Colors (modern palette)
+            screen, self.x + self.PADDING, self.toll_cost.getY() + height + self.PADDING,
+            input_width, height, name="Traffic Level",
+            font=self.font,
             colour=(225, 225, 225),
             borderColour=(200, 200, 200),
             textColour=(40, 40, 40),
             # Dropdown options
             colourSelected=(220, 235, 250),
             colourHover=(230, 240, 255),
-            # Shape
-            borderRadius=10,
-            # Behavior
-            direction="down",
-            name="Congestion Level",
-            choices=["Busy", "Non-Busy"],
+            choices=["Busy", "Non Busy"],
             values=[CongestionLevel.BUSY, CongestionLevel.NON_BUSY],
+            borderRadius=5, fontSize=18, direction="down"
         )
 
-        # self.road_condition_input = Dropdown(
-        #     screen,
-        #     self.x + self.PADDING,
-        #     self.toll_cost.getY() + height + self.PADDING,
-        #     input_width,
-        #     height,
-        #     fontSize=20,
-        #     textHAlign="centre",
-        #     # Colors (modern palette)
-        #     colour=(225, 225, 225),
-        #     borderColour=(200, 200, 200),
-        #     textColour=(40, 40, 40),
-        #     # Dropdown options
-        #     colourSelected=(220, 235, 250),
-        #     colourHover=(230, 240, 255),
-        #     # Shape
-        #     borderRadius=10,
-        #     # Behavior
-        #     direction="down",
-        #     name="Congestion Level",
-        #     choices=["Busy", "Non-Busy"],
-        #     values=[CongestionLevel.BUSY, CongestionLevel.NON_BUSY],
-        # )
+        # 4. Road Condition Dropdown (NEW)
+        self.road_condition = Dropdown(
+            screen, self.x + self.PADDING, self.congestion_input.getY() + height + self.PADDING,
+            input_width, height, name="Road Condition",
+            font=self.font,
+            colour=(225, 225, 225),
+            borderColour=(200, 200, 200),
+            textColour=(40, 40, 40),
+            # Dropdown options
+            colourSelected=(220, 235, 250),
+            colourHover=(230, 240, 255),
+            choices=["Clear", "Closure", "Accident"],
+            values=[RoadCondition.CLEAR, RoadCondition.CLOSURE, RoadCondition.ACCIDENT],
+            borderRadius=5, fontSize=18, direction="down"
+        )
 
-        # 4. One-Way Toggle (Positioned to the right of inputs)
+        # 5. One-Way Toggle
         self.one_way_toggle = Toggle(
-            self.screen,
-            self.x + self.WIDTH - 80,
-            self.weight_textbox.getY() + 5,
-            60,
-            25,
-            startOn=False,
+            screen, self.x + self.WIDTH - 80, self.weight_textbox.getY() + 5,
+            50, 22, startOn=False
         )
 
-        # 5. Submit Button
+        # 6. Submit Button
         self.button = Button(
-            screen,
-            (screen.get_width() - button_width) // 2,
-            self.y + self.HEIGHT - height - self.PADDING,
-            button_width,
-            height,
-            text="Add Road",
-            fontSize=20,
-            radius=8,
-            inactiveColour=(70, 130, 180),
+            screen, self.x + (self.WIDTH - 150) // 2, self.y + self.HEIGHT - 55,
+            150, 40, text="Create Road", fontSize=20, radius=10,
+            inactiveColour=self.HEADER_COLOR,
             hoverColour=(90, 150, 210),
             pressedColour=(50, 110, 160),
             textColour=(255, 255, 255),
@@ -136,80 +106,70 @@ class EdgeMenu:
         self.hide()
 
     def on_click(self):
-        if not self.active:
-            return
-
+        if not self.active: return
         try:
-            # Gather and validate data
             dist = float(self.weight_textbox.getText())
             toll = float(self.toll_cost.getText() or 0)
-            cong = self.congestion_input.getSelected()
-            is_one_way = self.one_way_toggle.getValue()
+            cong = self.congestion_input.getSelected() or CongestionLevel.NON_BUSY
+            cond = self.road_condition.getSelected() or RoadCondition.CLEAR
+            is_one_way = self.one_way_toggle.getValue() or False
 
-            if dist <= 0:
-                raise ValueError
+            if dist <= 0: raise ValueError
             
-            if not cong:
-                cong = CongestionLevel.NON_BUSY
-            
-            # Package data for the callback
             data = {
                 "distance": dist,
                 "toll_cost": toll,
                 "congestion": cong,
+                "condition": cond,
                 "is_one_way": is_one_way,
             }
 
             self.callback(data)
             self.hide()
-
         except ValueError:
             self.weight_textbox.setText("")
-            self.weight_textbox.placeholderText = "Check Inputs!"
+            self.weight_textbox.placeholderText = "Invalid Input!"
 
     def show(self):
         self.active = True
-        for widget in [
-            self.weight_textbox,
-            self.toll_cost,
-            self.congestion_input,
-            self.button,
-            self.one_way_toggle,
-        ]:
-            widget.enable()
-            widget.show()
+        for w in [self.weight_textbox, self.toll_cost, self.congestion_input, 
+                  self.road_condition, self.button, self.one_way_toggle]:
+            w.enable()
+            w.show()
 
     def hide(self):
         self.active = False
-        for widget in [
-            self.weight_textbox,
-            self.toll_cost,
-            self.congestion_input,
-            self.one_way_toggle,
-        ]:
-            if hasattr(widget, "setText"):
-                widget.setText("")
-            widget.disable()
-            widget.hide()
-
-        self.button.disable()
-        self.button.hide()
+        for w in [self.weight_textbox, self.toll_cost, self.congestion_input, 
+                  self.road_condition, self.one_way_toggle, self.button]:
+            # if hasattr(w, "setText"): w.setText("")
+            w.disable()
+            w.hide()
 
     def draw(self):
-        if not self.active:
-            return
+        if not self.active: return
 
-        # Background Panel
-        # pygame.draw.rect(self.screen, self.BG_COLOR, (self.x, self.y, self.WIDTH, self.HEIGHT), border_radius=12)
-        # pygame.draw.rect(self.screen, self.BORDER_COLOR, (self.x, self.y, self.WIDTH, self.HEIGHT), width=2, border_radius=12)
+        # Draw Shadow
+        # shadow_rect = pygame.Rect(self.x + 4, self.y + 4, self.WIDTH, self.HEIGHT)
+        # pygame.draw.rect(self.screen, (220, 220, 220), shadow_rect, border_radius=15)
+
+        # # Draw Main Background
+        # main_rect = pygame.Rect(self.x, self.y, self.WIDTH, self.HEIGHT)
+        # pygame.draw.rect(self.screen, self.BG_COLOR, main_rect, border_radius=15)
+        # pygame.draw.rect(self.screen, self.BORDER_COLOR, main_rect, width=2, border_radius=15)
+
+        # # Draw Header Bar
+        # header_rect = pygame.Rect(self.x, self.y, self.WIDTH, 45)
+        # pygame.draw.rect(self.screen, self.HEADER_COLOR, header_rect, 
+        #                  border_top_left_radius=15, border_top_right_radius=15)
 
         # Labels
-        small_font = pygame.font.SysFont("Segoe UI", 14)
+        title_font = pygame.font.SysFont("Segoe UI", 22, bold=True)
+        label_font = pygame.font.SysFont("Segoe UI", 14)
 
-        # self.screen.blit(self.font.render("Road Settings", True, (40, 40, 40)), (self.x + self.PADDING, self.y + 10))
+        # Header Title
+        # title_surf = title_font.render("Road Configuration", True, (255, 255, 255))
+        # self.screen.blit(title_surf, (self.x + self.PADDING, self.y + 10))
 
-        # Label for Toggle
-        toggle_label = small_font.render("One-Way", True, (60, 60, 60))
-        self.screen.blit(
-            toggle_label, (self.one_way_toggle.getX(), self.one_way_toggle.getY() - 18)
-        )
+        # Toggle Label
+        toggle_label = label_font.render("One-Way System", True, self.TEXT_COLOR)
+        self.screen.blit(toggle_label, (self.one_way_toggle.getX() - 100, self.one_way_toggle.getY() + 3))

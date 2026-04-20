@@ -276,10 +276,7 @@ class City:
         self.road_to_idx[road] = self.edges
         self.adj[a].add(road)
         self.edges += 1
-
-        if directed:
-            return
-
+        
         reverse = Road(
             self.edges, a, distance, congestion_level, condition, toll_cost, closed, True, directed
         )
@@ -311,7 +308,7 @@ class City:
         self.idx_to_road.pop(id + 1, None)
         self.adj.pop(id + 1, None)
 
-        for _, roads in self.adj:
+        for _, roads in self.adj.items():
             if reversed in roads:
                 roads.remove(reversed)
 

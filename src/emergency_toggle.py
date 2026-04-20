@@ -10,16 +10,16 @@ class EmergencyToggle:
         self.width: int = 60
         self.height: int = 30
 
-        self.x = self.width + 20
-        self.y = 50
+        self.x = 125
+        self.y = 75
 
         self.screen = screen
         self.font = font
 
         self.emergency_toggle: Toggle = Toggle(
             self.screen,
-            self.x,
-            self.y,
+            self.x - self.width // 2,
+            self.y - self.height // 2,
             self.width,
             self.height,
             fontSize=24,
@@ -37,7 +37,7 @@ class EmergencyToggle:
         self.screen.blit(
             text_surface,
             (
-                self.x + self.width // 2 - text_surface.get_width() // 2,
-                self.y - self.height // 2 - text_surface.get_height() // 2 - 10,
+                self.x - text_surface.get_width() // 2,
+                self.y - text_surface.get_height() // 2 - 40,
             ),
         )

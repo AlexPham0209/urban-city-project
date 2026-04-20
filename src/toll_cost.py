@@ -12,23 +12,23 @@ class TollCostInput:
         self.width: int = 200
         self.height: int = 44
 
-        self.x = 0
-        self.y = 200
+        self.x = 125
+        self.y = 175
 
         self.screen = screen
         self.font = font
 
         self.toggle_width = 60
         self.toggle_height = 30
-        self.toggle_x = self.toggle_width + 20
+        self.toggle_x = self.x 
         self.toggle_y = self.y
 
         self.is_toggled = False
 
         self.toggle: Toggle = Toggle(
             self.screen,
-            self.toggle_x,
-            self.toggle_y,
+            self.toggle_x - self.toggle_width // 2,
+            self.toggle_y - self.toggle_height // 2,
             self.toggle_width,
             self.toggle_height,
             fontSize=24,
@@ -39,11 +39,13 @@ class TollCostInput:
             text="Minimize Toll Cost",
             startOn=False
         )
-
+        
+        self.textbox_x = self.x 
+        self.textbox_y = self.toggle_y + self.toggle_height + 50
         self.textbox: TextBox = TextBox(
             self.screen,
-            self.x,
-            self.toggle_y + self.toggle_height + 20,
+            self.textbox_x - self.width // 2,
+            self.textbox_y - self.height // 2,
             self.width,
             self.height,
             fontSize=24,
@@ -72,8 +74,8 @@ class TollCostInput:
         self.screen.blit(
             text_surface,
             (
-                self.toggle_x + self.toggle_width // 2 - text_surface.get_width() // 2,
-                self.toggle_y - self.toggle_height // 2 - text_surface.get_height() // 2 - 10,
+                self.toggle_x - text_surface.get_width() // 2,
+                self.toggle_y - text_surface.get_height() // 2 - 40,
             ),
         )
 
