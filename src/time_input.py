@@ -15,13 +15,11 @@ class TimeInput:
         self.width = 50
         self.height = 35
 
-        self.left_x = 125
-        self.left_y = 75
 
         # Hour TextBox
         self.hour_box = TextBox(
             screen,
-            (x + 130),
+            ((x - self.width // 2) + 130),
             y - self.height // 2,
             self.width,
             self.height,
@@ -35,7 +33,7 @@ class TimeInput:
         # Minute TextBox
         self.min_box = TextBox(
             screen,
-            (x + 130),
+            ((x - self.width // 2) + 130),
             (y + 50) - self.height // 2,
             self.width,
             self.height,
@@ -62,14 +60,14 @@ class TimeInput:
         self.screen.blit(
             self.hour_label,
             (
-                self.x,
+                self.x - self.hour_label.get_width() // 2,
                 self.y - self.hour_label.get_height() // 2,
             ),
         )
         self.screen.blit(
             self.min_label,
             (
-                self.x,
+                self.x - self.min_label.get_width() // 2,
                 (self.y + 50) - self.min_label.get_height() // 2,
             ),
         )

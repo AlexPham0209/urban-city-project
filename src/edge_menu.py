@@ -14,7 +14,8 @@ class EdgeMenu:
     # Increased height to fit the second dropdown comfortably
     WIDTH = 400
     HEIGHT = 360
-    PADDING = 20
+    X_PADDING = 100
+    Y_PADDING = 35
 
     # Modern Color Palette
     BG_COLOR = (252, 252, 252)
@@ -31,9 +32,9 @@ class EdgeMenu:
 
         self.x = (screen.get_width() - self.WIDTH) // 2
         self.y = 20
-
-        input_width = 200
-        height = 35
+            
+        self.input_width = 200
+        self.height = 35
 
         # UI Styling variables
         widget_style = {
@@ -46,10 +47,10 @@ class EdgeMenu:
         # 1. Distance Input
         self.weight_textbox = TextBox(
             screen,
-            self.x + self.PADDING,
+            (self.x - self.input_width // 2) + self.X_PADDING,
             self.y,
-            input_width,
-            height,
+            self.input_width,
+            self.height,
             placeholderText="Distance (mi)",
             **widget_style,
         )
@@ -57,10 +58,10 @@ class EdgeMenu:
         # 2. Toll Cost Input
         self.toll_cost = TextBox(
             screen,
-            self.x + self.PADDING,
-            self.weight_textbox.getY() + height + self.PADDING,
-            input_width,
-            height,
+            (self.x - self.input_width // 2) + self.X_PADDING,
+            self.weight_textbox.getY() + self.height + self.Y_PADDING,
+            self.input_width,
+            self.height,
             placeholderText="Toll Cost ($)",
             **widget_style,
         )
@@ -68,10 +69,10 @@ class EdgeMenu:
         # 3. Congestion Dropdown
         self.congestion_input = Dropdown(
             screen,
-            self.x + self.PADDING,
-            self.toll_cost.getY() + height + self.PADDING,
-            input_width,
-            height,
+            (self.x - self.input_width // 2) + self.X_PADDING,
+            self.toll_cost.getY() + self.height + self.Y_PADDING,
+            self.input_width,
+            self.height,
             name="Traffic Level",
             font=self.font,
             colour=(225, 225, 225),
@@ -90,10 +91,10 @@ class EdgeMenu:
         # 4. Road Condition Dropdown (NEW)
         self.road_condition = Dropdown(
             screen,
-            self.x + self.PADDING,
-            self.congestion_input.getY() + height + self.PADDING,
-            input_width,
-            height,
+            (self.x - self.input_width // 2) + self.X_PADDING,
+            self.congestion_input.getY() + self.height + self.Y_PADDING,
+            self.input_width,
+            self.height,
             name="Road Condition",
             font=self.font,
             colour=(225, 225, 225),
@@ -109,13 +110,17 @@ class EdgeMenu:
             direction="down",
         )
 
+        self.one_way_x = (screen.get_width() + self.WIDTH) // 2 - self.X_PADDING
+        self.one_way_width = 50
+        self.one_way_height = 22
+
         # 5. One-Way Toggle
         self.one_way_toggle = Toggle(
             screen,
-            self.x + self.WIDTH - 80,
-            self.weight_textbox.getY() + 5,
-            50,
-            22,
+            (self.one_way_x - self.one_way_width // 2),
+            self.weight_textbox.getY() + self.Y_PADDING,
+            self.one_way_width,
+            self.one_way_height,
             startOn=False,
         )
 
@@ -226,5 +231,5 @@ class EdgeMenu:
         toggle_label = label_font.render("One-Way System", True, self.TEXT_COLOR)
         self.screen.blit(
             toggle_label,
-            (self.one_way_toggle.getX() - 100, self.one_way_toggle.getY() + 3),
+            (self.one_way_x - toggle_label.get_width() // 2, (self.weight_textbox.getY())),
         )

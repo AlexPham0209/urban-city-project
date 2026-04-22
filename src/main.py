@@ -63,7 +63,7 @@ class Game:
         self.left_y = 50
 
         self.time = TimeInput(
-            x=self.left_x - 100, y=self.left_y, screen=self.screen, font=self.font
+            x=self.left_x - 50, y=self.left_y, screen=self.screen, font=self.font
         )
 
         self.emergency_toggle = EmergencyToggle(
@@ -130,7 +130,7 @@ class Game:
             self.start.state = IntersectionState.UNSELECTED
         if self.end:
             self.end.state = IntersectionState.UNSELECTED
-
+        
         self.start = None
         self.end = None
 
@@ -140,7 +140,7 @@ class Game:
 
         if self.start and self.end:
             return False
-
+        
         if not self.start:
             self.start = selected
             self.start.state = IntersectionState.FIRST
@@ -297,7 +297,7 @@ class Game:
 
     def render(self, events):
         self.screen.fill((255, 255, 255))
-
+    
         self.draw_grid()
         self.city.draw(self.screen)
         self.dropdown.draw()
