@@ -6,12 +6,12 @@ from city import CongestionLevel
 
 
 class EmergencyToggle:
-    def __init__(self, screen: Surface, font: Font):
+    def __init__(self, x: int, y: int, screen: Surface, font: Font):
         self.width: int = 60
         self.height: int = 30
 
-        self.x = 125
-        self.y = 75
+        self.x = x
+        self.y = y
 
         self.screen = screen
         self.font = font

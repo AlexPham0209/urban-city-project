@@ -7,12 +7,13 @@ from pygame.font import Font
 import pygame_widgets
 from pygame_widgets.toggle import Toggle
 
-from city import City, Intersection, IntersectionState
+from city import City, Intersection, IntersectionState, Road
 from dropdown_menu import DropdownMenu
 from edge_menu import EdgeMenu
 from emergency_toggle import EmergencyToggle
 from game_state import State
 from node_menu import NodeMenu
+from time_input import TimeInput
 from toll_cost import TollCostInput
 
 # Constants
@@ -31,21 +32,23 @@ class Game:
 
         self.start: Intersection | None = None
         self.end: Intersection | None = None
+        self.selected_road: Road | None = None
+
         self.total_time: float | None = None
         self.route: list[str] | None = None
 
         self.font: Font = pygame.font.SysFont("Segoe UI", 24)
 
         self.state: State = State.CREATE
-        
+
         self.DROPDOWN_WIDTH: int = 160
         self.DROPDOWN_HEIGHT: int = 44
 
         self.mx = -1
         self.my = -1
 
-        self.dropdown_x: int = WIDTH - self.DROPDOWN_WIDTH - 20
-        self.dropdown_y: int = 50
+        self.dropdown_x: int = WIDTH - self.DROPDOWN_WIDTH // 2 - 20
+        self.dropdown_y: int = 75
 
         self.dropdown: DropdownMenu = DropdownMenu(
             x=self.dropdown_x,
@@ -56,15 +59,35 @@ class Game:
             font=self.font,
         )
 
-        self.emergency_toggle = EmergencyToggle(screen=self.screen, font=self.font)
-        self.toll_cost_input = TollCostInput(screen=self.screen, font=self.font)
+        self.left_x = 125
+        self.left_y = 75
+
+        self.emergency_toggle = EmergencyToggle(
+            x=self.left_x, y=self.left_y, screen=self.screen, font=self.font
+        )
+        self.toll_cost_input = TollCostInput(
+            x=self.left_x, y=self.left_y + 100, screen=self.screen, font=self.font
+        )
+        self.time = TimeInput(
+            x=self.left_x - 100, y=self.left_y + 175, screen=self.screen, font=self.font
+        )
 
         self.city = City(font=self.font)
-        self.edge_menu: EdgeMenu = EdgeMenu(self.screen, self.create_edge, self.font)
-        self.node_menu: NodeMenu = NodeMenu(self.screen, self.create_node)
+        self.edge_menu: EdgeMenu = EdgeMenu(
+            screen=self.screen, callback=self.create_edge, font=self.font
+        )
+        self.node_menu: NodeMenu = NodeMenu(self.screen, callback=self.create_node)
 
     def create_edge(self, data: dict):
-        self.city.add_road(self.start.id, self.end.id, distance=data["distance"], toll_cost=data["toll_cost"], congestion_level=data["congestion"], directed=data["is_one_way"])
+        self.city.add_road(
+            self.start.id,
+            self.end.id,
+            distance=data["distance"],
+            toll_cost=data["toll_cost"],
+            congestion_level=data["congestion"],
+            condition=data["condition"],
+            directed=data["is_one_way"],
+        )
         self.edge_menu.hide()
         self.reset_selection()
 
@@ -73,14 +96,28 @@ class Game:
             return
 
         self.city.add_intersection(name, self.mx, self.my, 25, (127, 127, 127))
-    
+
     def edit_edge(self, data: dict):
-        print(data)
+        if not self.selected_road:
+            return
+
+        self.city.remove_road(self.selected_road.id)
+        self.city.add_road(
+            self.selected_road.src,
+            self.selected_road.dest,
+            distance=data["distance"],
+            toll_cost=data["toll_cost"],
+            congestion_level=data["congestion"],
+            condition=data["condition"],
+            directed=data["is_one_way"],
+        )
+        self.selected_road.selected = False
+        self.selected_road = None
 
     def edit_node(self, name: str):
         if not self.start:
             return
-        
+
         self.start.state = IntersectionState.UNSELECTED
         self.start.name = name
         self.start = None
@@ -90,14 +127,17 @@ class Game:
             self.start.state = IntersectionState.UNSELECTED
         if self.end:
             self.end.state = IntersectionState.UNSELECTED
-        
+
         self.start = None
         self.end = None
 
     def select_intersection(self, selected: Intersection):
         if len(self.city.idx_to_intersection) <= 1:
             return False
-    
+
+        if self.start and self.end:
+            return False
+
         if not self.start:
             self.start = selected
             self.start.state = IntersectionState.FIRST
@@ -117,7 +157,7 @@ class Game:
         self.city.clicked_road(event)
         if not selected:
             return
-        
+
         if self.select_intersection(selected):
             if self.start != self.end:
                 self.edge_menu.show()
@@ -128,7 +168,7 @@ class Game:
         selected = self.city.clicked_intersection(event)
         if selected:
             self.city.remove_intersection(selected.id)
-        
+
         selected = self.city.clicked_road(event)
         if selected:
             self.city.remove_road(selected.id)
@@ -137,28 +177,44 @@ class Game:
         selected = self.city.clicked_intersection(event)
         if not selected:
             return
-        
+
         if self.start and self.end:
             self.reset_selection()
 
         if self.select_intersection(selected):
-            self.total_time, self.total_toll_cost, self.route = self.city.find_shortest_path(
-                self.start.id,
-                self.end.id,
-                maximum_toll_cost=float(self.toll_cost_input.textbox.getText()) or None if self.toll_cost_input.is_toggled else None,
-                is_emergency=self.emergency_toggle.emergency_toggle.getValue(),
+            self.total_time, self.total_toll_cost, self.route = (
+                self.city.find_shortest_path(
+                    self.start.id,
+                    self.end.id,
+                    maximum_toll_cost=float(self.toll_cost_input.textbox.getText())
+                    or None
+                    if self.toll_cost_input.is_toggled
+                    else None,
+                    is_emergency=self.emergency_toggle.emergency_toggle.getValue(),
+                )
             )
-            
 
     def handle_edit(self, event: Event):
         if self.start:
             return
 
         self.start = self.city.clicked_intersection(event)
-        
+
         if self.start:
             self.start.state = IntersectionState.SECOND
+            self.node_menu.set_options(self.start.name)
             self.node_menu.show()
+
+        if self.selected_road:
+            return
+
+        self.selected_road = self.city.clicked_road(event)
+        if self.selected_road:
+            self.selected_road.selected = True
+            self.edge_menu.set_options(
+                self.selected_road.distance, self.selected_road.toll_cost
+            )
+            self.edge_menu.show()
 
     def handle_mouse_event(self, event: Event):
         if event.type != pygame.MOUSEBUTTONDOWN:
@@ -191,7 +247,11 @@ class Game:
             else "No route to destination"
         )
         route = f"Route: {', '.join(self.route)}" if self.route else ""
-        toll_cost = f"Total Toll Cost: ${self.total_toll_cost:.2f}" if self.total_toll_cost != -1 else ""
+        toll_cost = (
+            f"Total Toll Cost: ${self.total_toll_cost:.2f}"
+            if self.total_toll_cost != -1
+            else ""
+        )
 
         time_surface = self.font.render(time, True, (0, 0, 0))
         route_surface = self.font.render(route, True, (0, 0, 0))
@@ -200,7 +260,6 @@ class Game:
         time_width, time_height = self.font.size(time)
         route_width, route_height = self.font.size(route)
         toll_cost_width, toll_cost_height = self.font.size(toll_cost)
-
 
         self.screen.blit(
             time_surface, (WIDTH // 2 - time_width // 2, y + time_height // 2)
@@ -216,10 +275,10 @@ class Game:
         self.screen.blit(
             toll_cost_surface,
             (
-                WIDTH // 2 - toll_cost_width // 2, 
+                WIDTH // 2 - toll_cost_width // 2,
                 y + time_height + route_height + padding - toll_cost_height // 2,
             ),
-        )   
+        )
 
     def draw_grid(self, spacing=40, color=(220, 220, 220)):
         for x in range(0, WIDTH, spacing):
@@ -238,6 +297,7 @@ class Game:
         self.edge_menu.draw()
         self.toll_cost_input.draw()
         self.draw_distance()
+        self.time.draw()
         # self.node_menu.draw()
 
         pygame_widgets.update(events)
@@ -273,7 +333,12 @@ class Game:
                 self.end = None
                 self.node_menu.hide()
                 self.edge_menu.hide()
-                
+
+                if self.selected_road:
+                    self.selected_road.selected = False
+
+                self.selected_road = None
+
             case _:
                 pass
 
@@ -283,6 +348,7 @@ class Game:
                 self.node_menu.callback = self.create_node
                 self.edge_menu.callback = self.create_edge
                 self.node_menu.button.setText("Create Intersection")
+                self.edge_menu.button.setText("Create Road")
 
             case State.DELETE:
                 pass
@@ -294,7 +360,8 @@ class Game:
                 self.node_menu.callback = self.edit_node
                 self.edge_menu.callback = self.edit_edge
                 self.node_menu.button.setText("Edit Intersection")
-                
+                self.edge_menu.button.setText("Edit Road")
+
             case _:
                 pass
 

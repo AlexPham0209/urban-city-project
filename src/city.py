@@ -32,7 +32,8 @@ class RoadCondition(Enum):
 @dataclass
 class Road:
     id: int
-    to: int
+    src: int
+    dest: int
     distance: float
     congestion_level: CongestionLevel
     condition: RoadCondition
@@ -40,13 +41,14 @@ class Road:
     closed: bool
     reversed: bool
     is_one_way: bool
+    selected: bool = False
 
     def get_cost(self) -> float:
         return self.distance / self.congestion_level.value
 
     def __lt__(self, other: Self) -> bool:
         return self.distance <= other.distance
-    
+
     def __hash__(self):
         return self.id
 
@@ -151,11 +153,11 @@ class City:
             a = self.idx_to_intersection[start]
 
             for road in roads:
-                b = self.idx_to_intersection[road.to]
+                b = self.idx_to_intersection[road.dest]
 
                 if road.reversed:
                     continue
-                
+
                 color = None
                 match road.congestion_level:
                     case CongestionLevel.NON_BUSY:
@@ -164,7 +166,10 @@ class City:
                         color = (255, 0, 0)
                     case _:
                         color = (255, 0, 0)
-                
+
+                if road.selected:
+                    color = (0, 0, 255)
+
                 # Draw road
                 pygame.draw.line(screen, color, (a.x, a.y), (b.x, b.y), width=2)
 
@@ -183,7 +188,7 @@ class City:
         toll_cost_surface = self.font.render(toll_cost, True, (0, 0, 0))
         miles_width, miles_height = self.font.size(miles)
         toll_width, toll_height = self.font.size(toll_cost)
-        
+
         dx, dy = b.x - a.x, b.y - a.y
         dist = math.hypot(dx, dy)
 
@@ -216,11 +221,11 @@ class City:
             (i for i in self.idx_to_intersection.values() if i.clicked(event)),
             None,
         )
-    
+
     def clicked_road(self, event: Event) -> Optional[Intersection]:
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
             return
-            
+
         mx, my = pygame.mouse.get_pos()
 
         for start, roads in self.adj.items():
@@ -229,12 +234,14 @@ class City:
             for road in roads:
                 if road.reversed:
                     continue
-                    
-                b = self.idx_to_intersection[road.to]
+
+                b = self.idx_to_intersection[road.dest]
                 dx, dy = b.x - a.x, b.y - a.y
 
-                distance = abs(dy * mx - dx * my + b.x * a.y - b.y * a.x) / math.sqrt(dy ** 2 + dx ** 2)
-                
+                distance = abs(dy * mx - dx * my + b.x * a.y - b.y * a.x) / math.sqrt(
+                    dy**2 + dx**2
+                )
+
                 if distance < 10:
                     return road
 
@@ -245,7 +252,7 @@ class City:
         intersection = Intersection(self.nodes, name, x, y, radius, color)
         self.idx_to_intersection[self.nodes] = intersection
         self.intersections_to_idx[intersection] = self.nodes
-        self.nodes += 1 
+        self.nodes += 1
         return True
 
     def remove_intersection(self, id: int):
@@ -253,7 +260,7 @@ class City:
         self.adj.pop(id, None)
 
         for node in self.adj:
-            self.adj[node] = [r for r in self.adj[node] if r.to != id]
+            self.adj[node] = [r for r in self.adj[node] if r.dest != id]
 
     def add_road(
         self,
@@ -270,15 +277,33 @@ class City:
             return
 
         road = Road(
-            self.edges, b, distance, congestion_level, condition, toll_cost, closed, False, directed
+            self.edges,
+            a,
+            b,
+            distance,
+            congestion_level,
+            condition,
+            toll_cost,
+            closed,
+            False,
+            directed,
         )
         self.idx_to_road[self.edges] = road
         self.road_to_idx[road] = self.edges
         self.adj[a].add(road)
         self.edges += 1
-        
+
         reverse = Road(
-            self.edges, a, distance, congestion_level, condition, toll_cost, closed, True, directed
+            self.edges,
+            b,
+            a,
+            distance,
+            congestion_level,
+            condition,
+            toll_cost,
+            closed,
+            True,
+            directed,
         )
         self.idx_to_road[self.edges] = reverse
         self.road_to_idx[reverse] = self.edges
@@ -288,7 +313,7 @@ class City:
     def remove_road(self, id: int):
         if id not in self.idx_to_road:
             return
-        
+
         road = self.idx_to_road[id]
         self.idx_to_road.pop(id, None)
         self.adj.pop(id, None)
@@ -298,8 +323,8 @@ class City:
                 roads.remove(road)
 
         if id + 1 not in self.idx_to_road:
-            return 
-        
+            return
+
         reversed = self.idx_to_road[id + 1]
 
         if not reversed.reversed:
@@ -311,8 +336,6 @@ class City:
         for _, roads in self.adj.items():
             if reversed in roads:
                 roads.remove(reversed)
-
-
 
     def find_shortest_path(
         self,
@@ -338,9 +361,19 @@ class City:
                 return time, total_toll_cost, path
 
             for road in self.adj[curr]:
-                id, to, _, _, condition, toll_cost, closed, reversed, is_one_way = astuple(
-                    road
-                )
+                (
+                    id,
+                    src,
+                    dst,
+                    _,
+                    _,
+                    condition,
+                    toll_cost,
+                    closed,
+                    reversed,
+                    is_one_way,
+                    _,
+                ) = astuple(road)
 
                 # Can't exceed past certain toll cost
                 if (
@@ -357,14 +390,20 @@ class City:
                 if reversed and is_one_way and not is_emergency:
                     continue
 
-                if to not in dist or time + road.get_cost() < dist[to]:
-                    dist[to] = time + road.get_cost()
+                if dst not in dist or time + road.get_cost() < dist[dst]:
+                    dist[dst] = time + road.get_cost()
                     next_toll_cost = total_toll_cost
                     if not is_emergency:
                         next_toll_cost += toll_cost
 
                     heapq.heappush(
-                        q, (dist[to], next_toll_cost, to, path + [self.idx_to_intersection[to].name])
+                        q,
+                        (
+                            dist[dst],
+                            next_toll_cost,
+                            dst,
+                            path + [self.idx_to_intersection[dst].name],
+                        ),
                     )
 
         return -1, -1, []

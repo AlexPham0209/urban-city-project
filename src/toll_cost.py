@@ -8,19 +8,22 @@ from pygame_widgets.toggle import Toggle
 
 
 class TollCostInput:
-    def __init__(self, screen: Surface, font: Font):
+    def __init__(self, x: int, y: int, screen: Surface, font: Font):
         self.width: int = 200
         self.height: int = 44
 
         self.x = 125
         self.y = 175
 
+        self.x = x
+        self.y = y
+
         self.screen = screen
         self.font = font
 
         self.toggle_width = 60
         self.toggle_height = 30
-        self.toggle_x = self.x 
+        self.toggle_x = self.x
         self.toggle_y = self.y
 
         self.is_toggled = False
@@ -37,10 +40,10 @@ class TollCostInput:
             radius=8,
             borderThickness=2,
             text="Minimize Toll Cost",
-            startOn=False
+            startOn=False,
         )
-        
-        self.textbox_x = self.x 
+
+        self.textbox_x = self.x
         self.textbox_y = self.toggle_y + self.toggle_height + 50
         self.textbox: TextBox = TextBox(
             self.screen,
@@ -56,17 +59,16 @@ class TollCostInput:
             placeholderText="Maximum Toll Cost",
         )
 
-
-    def on_toggled(self):      
+    def on_toggled(self):
         if self.on_toggled == self.toggle.getValue():
             return
         self.is_toggled = self.toggle.getValue()
-        
+
         if not self.is_toggled:
             self.textbox.hide()
         else:
             self.textbox.show()
-    
+
     def draw(self):
         self.toggle.draw()
 
@@ -78,5 +80,3 @@ class TollCostInput:
                 self.toggle_y - text_surface.get_height() // 2 - 40,
             ),
         )
-
-

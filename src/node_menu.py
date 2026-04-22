@@ -13,7 +13,7 @@ class NodeMenu:
         self.screen = screen
         self.callback = callback
         self.active = False
-        
+
         # Layout positioning (top-center)
         self.y = 20
 
@@ -47,14 +47,13 @@ class NodeMenu:
             fontSize=22,
             radius=8,
             borderThickness=0,
-            inactiveColour=(70, 130, 180),   # steel blue
+            inactiveColour=(70, 130, 180),  # steel blue
             hoverColour=(90, 150, 210),
             pressedColour=(50, 110, 160),
             textColour=(255, 255, 255),
             onClick=self.on_click,
         )
 
-    
         self.hide()
 
     # --------------------------
@@ -69,7 +68,7 @@ class NodeMenu:
         if len(text):
             self.callback(text)
             self.hide()
-        
+
         else:
             # Simple visual feedback
             self.name_textbox.setText("")
@@ -92,6 +91,9 @@ class NodeMenu:
         self.button.disable()
         self.name_textbox.hide()
         self.button.hide()
+
+    def set_options(self, text):
+        self.name_textbox.setText(text)
 
     # --------------------------
     # Rendering (Custom UI Panel)

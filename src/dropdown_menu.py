@@ -21,8 +21,8 @@ class DropdownMenu:
 
         self.dropdown = Dropdown(
             self.screen,
-            self.x,
-            self.y,
+            self.x - self.width // 2,
+            self.y - self.height // 2,
             self.width,
             self.height,
             name="Mode",
@@ -45,10 +45,10 @@ class DropdownMenu:
         )
 
     def draw(self):
-        panel_x = self.x - 10
-        panel_y = self.y - 40
         panel_width = 180
         panel_height = 90
+        panel_x = self.x - self.width // 2 - 10
+        panel_y = self.y - self.height // 2 - 40
 
         # Background card
         pygame.draw.rect(
