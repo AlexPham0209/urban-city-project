@@ -60,18 +60,19 @@ class Game:
         )
 
         self.left_x = 125
-        self.left_y = 75
+        self.left_y = 50
+
+        self.time = TimeInput(
+            x=self.left_x - 100, y=self.left_y, screen=self.screen, font=self.font
+        )
 
         self.emergency_toggle = EmergencyToggle(
-            x=self.left_x, y=self.left_y, screen=self.screen, font=self.font
+            x=self.left_x, y=self.left_y + 150, screen=self.screen, font=self.font
         )
         self.toll_cost_input = TollCostInput(
-            x=self.left_x, y=self.left_y + 100, screen=self.screen, font=self.font
+            x=self.left_x, y=self.left_y + 250, screen=self.screen, font=self.font
         )
-        self.time = TimeInput(
-            x=self.left_x - 100, y=self.left_y + 175, screen=self.screen, font=self.font
-        )
-
+        
         self.city = City(font=self.font)
         self.edge_menu: EdgeMenu = EdgeMenu(
             screen=self.screen, callback=self.create_edge, font=self.font
@@ -96,6 +97,7 @@ class Game:
             return
 
         self.city.add_intersection(name, self.mx, self.my, 25, (127, 127, 127))
+        self.node_menu.hide()
 
     def edit_edge(self, data: dict):
         if not self.selected_road:
@@ -113,6 +115,7 @@ class Game:
         )
         self.selected_road.selected = False
         self.selected_road = None
+        self.edge_menu.hide()
 
     def edit_node(self, name: str):
         if not self.start:
@@ -154,7 +157,7 @@ class Game:
             return
 
         selected = self.city.clicked_intersection(event)
-        self.city.clicked_road(event)
+
         if not selected:
             return
 
@@ -168,6 +171,7 @@ class Game:
         selected = self.city.clicked_intersection(event)
         if selected:
             self.city.remove_intersection(selected.id)
+            return
 
         selected = self.city.clicked_road(event)
         if selected:
@@ -195,6 +199,9 @@ class Game:
             )
 
     def handle_edit(self, event: Event):
+        if self.edge_menu.active or self.node_menu.active:
+            return
+        
         if self.start:
             return
 
@@ -204,6 +211,7 @@ class Game:
             self.start.state = IntersectionState.SECOND
             self.node_menu.set_options(self.start.name)
             self.node_menu.show()
+            return
 
         if self.selected_road:
             return
