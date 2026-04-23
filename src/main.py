@@ -224,10 +224,10 @@ class Game:
                 self.reset_selection()
 
     def handle_delete(self, event: Event):
-        self.handle_intesection_delete(event)
+        self.handle_intersection_delete(event)
         self.handle_road_delete(event)
 
-    def handle_intesection_delete(self, event: Event):
+    def handle_intersection_delete(self, event: Event):
         selected = self.city.clicked_intersection(event)
 
         if selected == self.start or selected == self.end:
