@@ -30,17 +30,23 @@ class Game:
         pygame.display.set_caption("Urban Traffic Visualization")
         self.clock: Clock = Clock()
 
+        # Selected for creation/edit
+        self.first_intersection: Intersection | None = None
+        self.second_intersection: Intersection | None = None
+
         self.start: Intersection | None = None
         self.end: Intersection | None = None
+        
         self.selected_road: Road | None = None
 
         self.total_time: float | None = None
         self.route: list[str] | None = None
 
         self.current_time: tuple[int, int] = (0, 0)
+        self.is_emergency: bool = False
+        self.toll_cost: float = 0
 
         self.font: Font = pygame.font.SysFont("Segoe UI", 24)
-
         self.state: State = State.CREATE
 
         self.DROPDOWN_WIDTH: int = 160
@@ -83,8 +89,8 @@ class Game:
 
     def create_edge(self, data: dict):
         self.city.add_road(
-            self.start.id,
-            self.end.id,
+            self.first_intersection.id,
+            self.second_intersection.id,
             distance=data["distance"],
             toll_cost=data["toll_cost"],
             congestion_level=data["congestion"],
@@ -93,6 +99,7 @@ class Game:
         )
         self.edge_menu.hide()
         self.reset_selection()
+        self.calculate_route()
 
     def create_node(self, name: str):
         if self.mx == -1 or self.my == -1:
@@ -100,6 +107,7 @@ class Game:
 
         self.city.add_intersection(name, self.mx, self.my, 25, (127, 127, 127))
         self.node_menu.hide()
+        self.calculate_route()
 
     def edit_edge(self, data: dict):
         if not self.selected_road:
@@ -118,16 +126,70 @@ class Game:
         self.selected_road.selected = False
         self.selected_road = None
         self.edge_menu.hide()
+        self.calculate_route()
 
     def edit_node(self, name: str):
-        if not self.start:
+        if not self.first_intersection:
             return
 
-        self.start.state = IntersectionState.UNSELECTED
-        self.start.name = name
-        self.start = None
+        self.first_intersection.state = IntersectionState.UNSELECTED
+        self.first_intersection.name = name
+        self.first_intersection = None
+        self.calculate_route()
 
+    def select_intersection(self, selected: Intersection):
+        if len(self.city.idx_to_intersection) <= 1:
+            return False
+
+        if self.first_intersection and self.second_intersection:
+            return False
+
+        if not self.first_intersection:
+            self.first_intersection = selected
+            self.first_intersection.state = IntersectionState.FIRST
+            return False
+        else:
+            self.second_intersection = selected
+            self.second_intersection.state = IntersectionState.SECOND
+            return True
+        
     def reset_selection(self):
+        if self.first_intersection:
+            if self.first_intersection == self.start:
+                self.first_intersection.state = IntersectionState.START
+            elif self.first_intersection == self.end:
+                self.first_intersection.state = IntersectionState.END
+            else:
+                self.first_intersection.state = IntersectionState.UNSELECTED
+
+        if self.second_intersection:
+            if self.second_intersection == self.start:
+                self.second_intersection.state = IntersectionState.START
+            elif self.second_intersection == self.end:
+                self.second_intersection.state = IntersectionState.END
+            else:
+                self.second_intersection.state = IntersectionState.UNSELECTED
+
+        self.first_intersection = None
+        self.second_intersection = None
+        
+    def select_route(self, selected: Intersection):
+        if len(self.city.idx_to_intersection) <= 1:
+            return False
+        
+        if self.start and self.end:
+            return False
+
+        if not self.start:
+            self.start = selected
+            self.start.state = IntersectionState.START
+            return False
+        else:
+            self.end = selected
+            self.end.state = IntersectionState.END
+            return True
+        
+    def reset_route(self):
         if self.start:
             self.start.state = IntersectionState.UNSELECTED
         if self.end:
@@ -135,22 +197,6 @@ class Game:
 
         self.start = None
         self.end = None
-
-    def select_intersection(self, selected: Intersection):
-        if len(self.city.idx_to_intersection) <= 1:
-            return False
-
-        if self.start and self.end:
-            return False
-
-        if not self.start:
-            self.start = selected
-            self.start.state = IntersectionState.FIRST
-            return False
-        else:
-            self.end = selected
-            self.end.state = IntersectionState.SECOND
-            return True
 
     def handle_create(self, event: Event):
         if event.button == 3:
@@ -164,20 +210,31 @@ class Game:
             return
 
         if self.select_intersection(selected):
-            if self.start != self.end:
+            if self.first_intersection != self.second_intersection:
                 self.edge_menu.show()
             else:
                 self.reset_selection()
 
     def handle_delete(self, event: Event):
+        self.handle_intesection_delete(event)
+        self.handle_road_delete(event)
+
+    def handle_intesection_delete(self, event: Event):
         selected = self.city.clicked_intersection(event)
+
+        if selected == self.start or selected == self.end:
+            return
+        
         if selected:
             self.city.remove_intersection(selected.id)
-            return
+            self.calculate_route()
 
+    def handle_road_delete(self, event: Event):
         selected = self.city.clicked_road(event)
+
         if selected:
             self.city.remove_road(selected.id)
+            self.calculate_route()
 
     def handle_calculate(self, event: Event):
         selected = self.city.clicked_intersection(event)
@@ -185,9 +242,9 @@ class Game:
             return
 
         if self.start and self.end:
-            self.reset_selection()
+            self.reset_route()
 
-        if self.select_intersection(selected):
+        if self.select_route(selected):
             self.calculate_route()
 
     def calculate_route(self):
@@ -199,10 +256,10 @@ class Game:
                 self.start.id,
                 self.end.id,
                 self.current_time,
-                maximum_toll_cost=float(self.toll_cost_input.textbox.getText()) or None
+                maximum_toll_cost=self.toll_cost
                 if self.toll_cost_input.is_toggled
                 else None,
-                is_emergency=self.emergency_toggle.emergency_toggle.getValue(),
+                is_emergency=self.is_emergency,
             )
         )
 
@@ -210,17 +267,29 @@ class Game:
         if self.edge_menu.active or self.node_menu.active:
             return
 
-        if self.start:
+        self.handle_intersection_edit(event)
+        self.handle_road_edit(event)
+        
+
+    def handle_intersection_edit(self, event: Event):
+        if self.first_intersection:
+            return
+        
+        selected = self.city.clicked_intersection(event)
+
+        if not selected:
+            return
+        
+        if selected == self.start or selected == self.end:
             return
 
-        self.start = self.city.clicked_intersection(event)
-
-        if self.start:
-            self.start.state = IntersectionState.SECOND
-            self.node_menu.set_options(self.start.name)
+        self.first_intersection = selected
+        if self.first_intersection:
+            self.first_intersection.state = IntersectionState.SECOND
+            self.node_menu.set_options(self.first_intersection.name)
             self.node_menu.show()
-            return
-
+        
+    def handle_road_edit(self, event: Event):
         if self.selected_road:
             return
 
@@ -247,7 +316,7 @@ class Game:
                 self.handle_edit(event)
 
     def draw_distance(self):
-        if self.total_time is None or self.state != State.CALCULATE:
+        if self.total_time is None:
             return
 
         y = 10
@@ -320,7 +389,12 @@ class Game:
 
     def update(self):
         self.toll_cost_input.on_toggled()
+        self.update_time()
+        self.update_emergency()
+        self.update_toll_cost()
+        self.calculate_route()
 
+    def update_time(self):
         time = self.time.get_time()
 
         if time == self.current_time:
@@ -328,8 +402,28 @@ class Game:
 
         self.current_time = time
 
-        if self.state == State.CALCULATE:
-            self.calculate_route()
+    def update_emergency(self):
+        toggled = self.emergency_toggle.emergency_toggle.getValue()
+
+        if toggled == self.is_emergency:
+            return
+        
+        self.is_emergency = toggled
+
+    def update_toll_cost(self):
+        if not self.toll_cost_input.is_toggled:
+            return 
+        
+        try: 
+            value = float(self.toll_cost_input.textbox.getText() or 0)
+
+            if not value or value == self.toll_cost:
+                return
+            
+            self.toll_cost = value
+        
+        except ValueError:
+            self.toll_cost = 0
 
     def state_changed(self):
         self.state_exit()
@@ -347,15 +441,12 @@ class Game:
                 self.reset_selection()
 
             case State.CALCULATE:
-                self.reset_selection()
-                self.total_time = None
-                self.route = None
+                if not self.start or not self.end:
+                    self.reset_route()
             
             case State.EDIT:
                 self.reset_selection()
 
-                self.start = None
-                self.end = None
                 self.node_menu.hide()
                 self.edge_menu.hide()
 

@@ -48,9 +48,12 @@ class TimeInput:
 
     def get_time(self) -> tuple[int, int]:
         """Returns (hour, minute) as integers, defaulting to 0 if invalid."""
-        h = int(self.hour_box.getText() or 0)
-        m = int(self.min_box.getText() or 0)
-        return max(0, min(23, h)), max(0, min(59, m))
+        try:
+            h = int(self.hour_box.getText() or 0)
+            m = int(self.min_box.getText() or 0)
+            return max(0, min(23, h)), max(0, min(59, m))
+        except ValueError:
+            return (0, 0)
 
     def draw(self):
         self.screen.blit(

@@ -18,8 +18,14 @@ class CongestionLevel(Enum):
 
 class IntersectionState(Enum):
     UNSELECTED = 1
+
+    # Selection State
     FIRST = 2
     SECOND = 3
+
+    # Route State
+    START = 4
+    END = 5
 
 
 class RoadCondition(Enum):
@@ -72,11 +78,10 @@ class Road:
             return 0.85
         elif is_evening_peak_hours: 
             return 0.75
-            
+
         return 1.0
 
         
-
     def convert_to_minutes(self, hours: int, minutes: int):
         return hours * 60 + minutes
 
@@ -119,9 +124,13 @@ class Intersection:
             case IntersectionState.UNSELECTED:
                 color = self.color
             case IntersectionState.FIRST:
-                color = (255, 0, 0)
-            case IntersectionState.SECOND:
                 color = (0, 255, 0)
+            case IntersectionState.SECOND:
+                color = (255, 0, 0)
+            case IntersectionState.START:
+                color = (0, 0, 255)
+            case IntersectionState.END:
+                color = (255, 127, 0)
 
         # Inner circle
         gfxdraw.filled_circle(
@@ -157,7 +166,10 @@ class Intersection:
         )
 
     def __eq__(self, other: Self):
-        return self.name == other.name
+        if not other:
+            return False
+        
+        return self.id == other.id
 
     def __hash__(self):
         return self.id
@@ -222,7 +234,7 @@ class City:
         toll_cost_surface = self.font.render(toll_cost, True, (0, 0, 0))
         miles_width, miles_height = self.font.size(miles)
         toll_width, toll_height = self.font.size(toll_cost)
-
+            
         dx, dy = b.x - a.x, b.y - a.y
         dist = math.hypot(dx, dy)
 
