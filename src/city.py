@@ -306,7 +306,7 @@ class City:
         self.adj.pop(id, None)
 
         for node in self.adj:
-            self.adj[node] = [r for r in self.adj[node] if r.dest != id]
+            self.adj[node] = set([r for r in self.adj[node] if r.dest != id])
 
     def add_road(
         self,
