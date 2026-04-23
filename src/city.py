@@ -43,8 +43,38 @@ class Road:
     is_one_way: bool
     selected: bool = False
 
-    def get_cost(self) -> float:
-        return self.distance / self.congestion_level.value
+    def get_cost(self, time: tuple[int, int]) -> float:
+        hours, minutes = time
+        time_in_minutes = hours * 60 + minutes
+        time_factor = self.calculate_time_factor(time_in_minutes)
+
+        # Changes speed depending on usual congestion level
+        speed = self.congestion_level.value
+
+        # Changes the current speed on the car depending on the condition of the road and the current time
+        speed *= time_factor
+        
+        return self.distance / (speed)
+    
+
+    def calculate_time_factor(self, time: int):
+        is_morning_rush = self.convert_to_minutes(6, 30) <= time <= self.convert_to_minutes(7, 0)
+        is_evening_rush_start = self.convert_to_minutes(16, 0) <= time < self.convert_to_minutes(17, 0) 
+        is_evening_peak_hours = self.convert_to_minutes(17, 0) <= time <= self.convert_to_minutes(18, 30)
+
+        if is_morning_rush:
+            return 0.75
+        elif is_evening_rush_start:
+            return 0.5
+        elif is_evening_peak_hours: 
+            return 0.25
+        
+        return 1.0
+
+        
+
+    def convert_to_minutes(self, hours: int, minutes: int):
+        return hours * 60 + minutes
 
     def __lt__(self, other: Self) -> bool:
         return self.distance <= other.distance
@@ -341,7 +371,7 @@ class City:
         self,
         src: int,
         dest: int,
-        # time: tuple[int, int],
+        current_time: tuple[int, int],
         maximum_toll_cost: float | None = None,
         is_emergency: bool = False,
     ) -> tuple[float, float, list[float]]:
@@ -391,8 +421,8 @@ class City:
                 if reversed and is_one_way and not is_emergency:
                     continue
 
-                if dst not in dist or time + road.get_cost() < dist[dst]:
-                    dist[dst] = time + road.get_cost()
+                if dst not in dist or time + road.get_cost(current_time) < dist[dst]:
+                    dist[dst] = time + road.get_cost(current_time)
                     next_toll_cost = total_toll_cost
                     if not is_emergency:
                         next_toll_cost += toll_cost

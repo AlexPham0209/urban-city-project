@@ -74,7 +74,7 @@ class Game:
         self.toll_cost_input = TollCostInput(
             x=self.left_x, y=self.left_y + 250, screen=self.screen, font=self.font
         )
-        
+
         self.city = City(font=self.font)
         self.edge_menu: EdgeMenu = EdgeMenu(
             screen=self.screen, callback=self.create_edge, font=self.font
@@ -132,7 +132,7 @@ class Game:
             self.start.state = IntersectionState.UNSELECTED
         if self.end:
             self.end.state = IntersectionState.UNSELECTED
-        
+
         self.start = None
         self.end = None
 
@@ -142,7 +142,7 @@ class Game:
 
         if self.start and self.end:
             return False
-        
+
         if not self.start:
             self.start = selected
             self.start.state = IntersectionState.FIRST
@@ -188,22 +188,28 @@ class Game:
             self.reset_selection()
 
         if self.select_intersection(selected):
-            self.total_time, self.total_toll_cost, self.route = (
-                self.city.find_shortest_path(
-                    self.start.id,
-                    self.end.id,
-                    maximum_toll_cost=float(self.toll_cost_input.textbox.getText())
-                    or None
-                    if self.toll_cost_input.is_toggled
-                    else None,
-                    is_emergency=self.emergency_toggle.emergency_toggle.getValue(),
-                )
+            self.calculate_route()
+
+    def calculate_route(self):
+        if not self.start or not self.end:
+            return
+        
+        self.total_time, self.total_toll_cost, self.route = (
+            self.city.find_shortest_path(
+                self.start.id,
+                self.end.id,
+                self.current_time,
+                maximum_toll_cost=float(self.toll_cost_input.textbox.getText()) or None
+                if self.toll_cost_input.is_toggled
+                else None,
+                is_emergency=self.emergency_toggle.emergency_toggle.getValue(),
             )
+        )
 
     def handle_edit(self, event: Event):
         if self.edge_menu.active or self.node_menu.active:
             return
-        
+
         if self.start:
             return
 
@@ -299,7 +305,7 @@ class Game:
 
     def render(self, events):
         self.screen.fill((255, 255, 255))
-    
+
         self.draw_grid()
         self.city.draw(self.screen)
         self.dropdown.draw()
@@ -315,6 +321,15 @@ class Game:
     def update(self):
         self.toll_cost_input.on_toggled()
 
+        time = self.time.get_time()
+
+        if time == self.current_time:
+            return
+
+        self.current_time = time
+
+        if self.state == State.CALCULATE:
+            self.calculate_route()
 
     def state_changed(self):
         self.state_exit()
