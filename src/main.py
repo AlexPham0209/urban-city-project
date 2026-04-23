@@ -29,31 +29,37 @@ class Game:
         self.screen: Surface = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Urban Traffic Visualization")
         self.clock: Clock = Clock()
+        self.font: Font = pygame.font.SysFont("Segoe UI", 24)
 
-        # Selected for creation/edit
+        # Controls the program's state
+        self.state: State = State.CREATE
+
+        # Selections for changing the city layout
         self.first_intersection: Intersection | None = None
         self.second_intersection: Intersection | None = None
-
-        self.start: Intersection | None = None
-        self.end: Intersection | None = None
-        
         self.selected_road: Road | None = None
 
+        # Selections for the route
+        self.start: Intersection | None = None
+        self.end: Intersection | None = None
+
+        # Mouse input
+        self.mx = -1
+        self.my = -1
+
+        # Persistent states
         self.total_time: float | None = None
         self.route: list[str] | None = None
-
         self.current_time: tuple[int, int] = (0, 0)
         self.is_emergency: bool = False
         self.toll_cost: float = 0
 
-        self.font: Font = pygame.font.SysFont("Segoe UI", 24)
-        self.state: State = State.CREATE
+        # City
+        self.city = City(font=self.font)
 
+        # Dropdown
         self.DROPDOWN_WIDTH: int = 160
         self.DROPDOWN_HEIGHT: int = 44
-
-        self.mx = -1
-        self.my = -1
 
         self.dropdown_x: int = WIDTH - self.DROPDOWN_WIDTH // 2 - 20
         self.dropdown_y: int = 75
@@ -67,6 +73,7 @@ class Game:
             font=self.font,
         )
 
+        # Leftside settings
         self.left_x = 125
         self.left_y = 50
 
@@ -81,7 +88,7 @@ class Game:
             x=self.left_x, y=self.left_y + 250, screen=self.screen, font=self.font
         )
 
-        self.city = City(font=self.font)
+        # City settings
         self.edge_menu: EdgeMenu = EdgeMenu(
             screen=self.screen, callback=self.create_edge, font=self.font
         )
@@ -154,24 +161,25 @@ class Game:
             return True
         
     def reset_selection(self):
-        if self.first_intersection:
-            if self.first_intersection == self.start:
-                self.first_intersection.state = IntersectionState.START
-            elif self.first_intersection == self.end:
-                self.first_intersection.state = IntersectionState.END
-            else:
-                self.first_intersection.state = IntersectionState.UNSELECTED
-
-        if self.second_intersection:
-            if self.second_intersection == self.start:
-                self.second_intersection.state = IntersectionState.START
-            elif self.second_intersection == self.end:
-                self.second_intersection.state = IntersectionState.END
-            else:
-                self.second_intersection.state = IntersectionState.UNSELECTED
+        self.reset_intersection(self.first_intersection)
+        self.reset_intersection(self.second_intersection)
 
         self.first_intersection = None
         self.second_intersection = None
+
+    def reset_intersection(self, intersection: Intersection):
+        if not intersection:
+            return
+        
+        if intersection == self.start:
+            intersection.state = IntersectionState.START
+
+        elif intersection == self.end:
+            intersection.state = IntersectionState.END
+
+        else:
+            intersection.state = IntersectionState.UNSELECTED
+    
         
     def select_route(self, selected: Intersection):
         if len(self.city.idx_to_intersection) <= 1:
