@@ -15,7 +15,6 @@ class TimeInput:
         self.width = 50
         self.height = 35
 
-
         # Hour TextBox
         self.hour_box = TextBox(
             screen,
@@ -50,11 +49,11 @@ class TimeInput:
     def get_time(self) -> tuple[int, int]:
         """Returns (hour, minute) as integers, defaulting to 0 if invalid."""
         try:
-            h = int(self.hour_box.getText())
-            m = int(self.min_box.getText())
+            h = int(self.hour_box.getText() or 0)
+            m = int(self.min_box.getText() or 0)
             return max(0, min(23, h)), max(0, min(59, m))
         except ValueError:
-            return 0, 0
+            return (0, 0)
 
     def draw(self):
         self.screen.blit(

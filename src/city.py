@@ -18,8 +18,14 @@ class CongestionLevel(Enum):
 
 class IntersectionState(Enum):
     UNSELECTED = 1
+
+    # Selection State
     FIRST = 2
     SECOND = 3
+
+    # Route State
+    START = 4
+    END = 5
 
 
 class RoadCondition(Enum):
@@ -43,8 +49,41 @@ class Road:
     is_one_way: bool
     selected: bool = False
 
-    def get_cost(self) -> float:
-        return self.distance / self.congestion_level.value
+    def get_cost(self, time: tuple[int, int]) -> float:
+        hours, minutes = time
+        time_in_minutes = hours * 60 + minutes
+        time_factor = self.calculate_time_factor(time_in_minutes)
+
+        # Changes speed depending on usual congestion level
+        speed = self.congestion_level.value
+
+        # Changes the current speed on the car depending on the condition of the road and the current time
+        speed *= time_factor
+        
+        return self.distance / (speed)
+    
+
+    def calculate_time_factor(self, time: int):
+        is_morning_rush = self.convert_to_minutes(6, 30) <= time <= self.convert_to_minutes(7, 0)
+        is_evening_rush_start = self.convert_to_minutes(16, 0) <= time < self.convert_to_minutes(17, 0) 
+        is_evening_peak_hours = self.convert_to_minutes(17, 0) <= time <= self.convert_to_minutes(18, 30)
+
+        if self.condition == RoadCondition.ACCIDENT:
+            return 0.5
+        elif self.condition == RoadCondition.CONSTRUCTION:
+            return 0.85
+        elif is_morning_rush:
+            return 0.9
+        elif is_evening_rush_start:
+            return 0.85
+        elif is_evening_peak_hours: 
+            return 0.75
+
+        return 1.0
+
+        
+    def convert_to_minutes(self, hours: int, minutes: int):
+        return hours * 60 + minutes
 
     def __lt__(self, other: Self) -> bool:
         return self.distance <= other.distance
@@ -85,9 +124,13 @@ class Intersection:
             case IntersectionState.UNSELECTED:
                 color = self.color
             case IntersectionState.FIRST:
-                color = (255, 0, 0)
-            case IntersectionState.SECOND:
                 color = (0, 255, 0)
+            case IntersectionState.SECOND:
+                color = (255, 0, 0)
+            case IntersectionState.START:
+                color = (0, 0, 255)
+            case IntersectionState.END:
+                color = (255, 127, 0)
 
         # Inner circle
         gfxdraw.filled_circle(
@@ -123,7 +166,10 @@ class Intersection:
         )
 
     def __eq__(self, other: Self):
-        return self.name == other.name
+        if not other:
+            return False
+        
+        return self.id == other.id
 
     def __hash__(self):
         return self.id
@@ -188,7 +234,7 @@ class City:
         toll_cost_surface = self.font.render(toll_cost, True, (0, 0, 0))
         miles_width, miles_height = self.font.size(miles)
         toll_width, toll_height = self.font.size(toll_cost)
-
+            
         dx, dy = b.x - a.x, b.y - a.y
         dist = math.hypot(dx, dy)
 
@@ -341,7 +387,7 @@ class City:
         self,
         src: int,
         dest: int,
-        # time: tuple[int, int],
+        current_time: tuple[int, int],
         maximum_toll_cost: float | None = None,
         is_emergency: bool = False,
     ) -> tuple[float, float, list[float]]:
@@ -391,8 +437,8 @@ class City:
                 if reversed and is_one_way and not is_emergency:
                     continue
 
-                if dst not in dist or time + road.get_cost() < dist[dst]:
-                    dist[dst] = time + road.get_cost()
+                if dst not in dist or time + road.get_cost(current_time) < dist[dst]:
+                    dist[dst] = time + road.get_cost(current_time)
                     next_toll_cost = total_toll_cost
                     if not is_emergency:
                         next_toll_cost += toll_cost

@@ -32,7 +32,7 @@ class EdgeMenu:
 
         self.x = (screen.get_width() - self.WIDTH) // 2
         self.y = 20
-            
+
         self.input_width = 200
         self.height = 35
 
@@ -103,8 +103,8 @@ class EdgeMenu:
             # Dropdown options
             colourSelected=(220, 235, 250),
             colourHover=(230, 240, 255),
-            choices=["Clear", "Closure", "Accident"],
-            values=[RoadCondition.CLEAR, RoadCondition.CLOSURE, RoadCondition.ACCIDENT],
+            choices=["Clear", "Closure", "Accident", "Construction"],
+            values=[RoadCondition.CLEAR, RoadCondition.CLOSURE, RoadCondition.ACCIDENT, RoadCondition.CONSTRUCTION],
             borderRadius=5,
             fontSize=18,
             direction="down",
@@ -212,5 +212,8 @@ class EdgeMenu:
         toggle_label = label_font.render("One-Way", True, self.TEXT_COLOR)
         self.screen.blit(
             toggle_label,
-            (self.one_way_x - toggle_label.get_width() // 2, (self.weight_textbox.getY())),
+            (
+                self.one_way_x - toggle_label.get_width() // 2,
+                (self.weight_textbox.getY()),
+            ),
         )
