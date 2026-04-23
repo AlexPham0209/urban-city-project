@@ -350,7 +350,7 @@ class Game:
                 self.reset_selection()
                 self.total_time = None
                 self.route = None
-
+            
             case State.EDIT:
                 self.reset_selection()
 

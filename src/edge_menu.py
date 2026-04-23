@@ -103,8 +103,8 @@ class EdgeMenu:
             # Dropdown options
             colourSelected=(220, 235, 250),
             colourHover=(230, 240, 255),
-            choices=["Clear", "Closure", "Accident"],
-            values=[RoadCondition.CLEAR, RoadCondition.CLOSURE, RoadCondition.ACCIDENT],
+            choices=["Clear", "Closure", "Accident", "Construction"],
+            values=[RoadCondition.CLEAR, RoadCondition.CLOSURE, RoadCondition.ACCIDENT, RoadCondition.CONSTRUCTION],
             borderRadius=5,
             fontSize=18,
             direction="down",

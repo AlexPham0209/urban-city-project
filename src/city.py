@@ -62,13 +62,17 @@ class Road:
         is_evening_rush_start = self.convert_to_minutes(16, 0) <= time < self.convert_to_minutes(17, 0) 
         is_evening_peak_hours = self.convert_to_minutes(17, 0) <= time <= self.convert_to_minutes(18, 30)
 
-        if is_morning_rush:
-            return 0.75
-        elif is_evening_rush_start:
+        if self.condition == RoadCondition.ACCIDENT:
             return 0.5
+        elif self.condition == RoadCondition.CONSTRUCTION:
+            return 0.85
+        elif is_morning_rush:
+            return 0.9
+        elif is_evening_rush_start:
+            return 0.85
         elif is_evening_peak_hours: 
-            return 0.25
-        
+            return 0.75
+            
         return 1.0
 
         
