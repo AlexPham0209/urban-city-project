@@ -37,6 +37,8 @@ class Game:
         self.total_time: float | None = None
         self.route: list[str] | None = None
 
+        self.current_time: tuple[int, int] = (0, 0)
+
         self.font: Font = pygame.font.SysFont("Segoe UI", 24)
 
         self.state: State = State.CREATE
@@ -306,13 +308,13 @@ class Game:
         self.toll_cost_input.draw()
         self.draw_distance()
         self.time.draw()
-        # self.node_menu.draw()
 
         pygame_widgets.update(events)
         pygame.display.update()
 
     def update(self):
         self.toll_cost_input.on_toggled()
+
 
     def state_changed(self):
         self.state_exit()

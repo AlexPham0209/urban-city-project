@@ -205,30 +205,11 @@ class EdgeMenu:
         if not self.active:
             return
 
-        # Draw Shadow
-        # shadow_rect = pygame.Rect(self.x + 4, self.y + 4, self.WIDTH, self.HEIGHT)
-        # pygame.draw.rect(self.screen, (220, 220, 220), shadow_rect, border_radius=15)
-
-        # # Draw Main Background
-        # main_rect = pygame.Rect(self.x, self.y, self.WIDTH, self.HEIGHT)
-        # pygame.draw.rect(self.screen, self.BG_COLOR, main_rect, border_radius=15)
-        # pygame.draw.rect(self.screen, self.BORDER_COLOR, main_rect, width=2, border_radius=15)
-
-        # # Draw Header Bar
-        # header_rect = pygame.Rect(self.x, self.y, self.WIDTH, 45)
-        # pygame.draw.rect(self.screen, self.HEADER_COLOR, header_rect,
-        #                  border_top_left_radius=15, border_top_right_radius=15)
-
         # Labels
-        title_font = pygame.font.SysFont("Segoe UI", 22, bold=True)
         label_font = pygame.font.SysFont("Segoe UI", 14)
 
-        # Header Title
-        # title_surf = title_font.render("Road Configuration", True, (255, 255, 255))
-        # self.screen.blit(title_surf, (self.x + self.PADDING, self.y + 10))
-
         # Toggle Label
-        toggle_label = label_font.render("One-Way System", True, self.TEXT_COLOR)
+        toggle_label = label_font.render("One-Way", True, self.TEXT_COLOR)
         self.screen.blit(
             toggle_label,
             (self.one_way_x - toggle_label.get_width() // 2, (self.weight_textbox.getY())),
